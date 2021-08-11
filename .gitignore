@@ -1,0 +1,19 @@
+__pycache__/
+.ipynb_checkpoints
+.DS_Store
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.idea/
+.vscode/
+
+# Data directories
+network/
+data/
+
+# Particle tracking
+simulation/
