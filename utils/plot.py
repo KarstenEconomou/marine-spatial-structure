@@ -56,6 +56,17 @@ def add_other_hexagons(ax: plt.Axes, domain_hexagons: ArrayLike) -> None:
         )
 
 
+def add_boundaries(ax: plt.Axes, zones: Dict[Zone, GeneticZone]) -> None:
+    """Draw boundaries."""
+    for zone in zones.values():
+        ax.plot(
+            *zone.poly.exterior.xy,
+            color='black',
+            linewidth='0.25',
+            transform=ccrs.PlateCarree(),
+        )
+
+
 def plot_hexbins(
     hexagons: ArrayLike,
     title: Optional[str] = None,
@@ -74,6 +85,7 @@ def plot_modules(
     hexagons: ArrayLike,
     colors: ArrayLike,
     other_hexagons: Optional[ArrayLike] = None,
+    zones: Optional[Dict[Zone, GeneticZone]] = None,
     colorbar: bool = False,
     colorbar_label: str = 'Module',
     title: Optional[str] = None,
@@ -96,6 +108,9 @@ def plot_modules(
 
     if other_hexagons is not None:
         add_other_hexagons(ax, other_hexagons)
+
+    if zones is not None:
+        add_boundaries(ax, zones)
 
     if colorbar:
         number_of_modules = max(hexagon.module.index for hexagon in hexagons)
@@ -275,13 +290,7 @@ def plot_subpopulations(
     if colors is None:
         colors = ['red', 'green', 'blue']
 
-    for zone in zones.values():
-        ax.plot(
-            *zone.poly.exterior.xy,
-            color='black',
-            linewidth='0.25',
-            transform=ccrs.PlateCarree(),
-        )
+    add_boundaries(ax, zones)
 
     for i, zone in enumerate(zones.keys()):
         if time == -1:
