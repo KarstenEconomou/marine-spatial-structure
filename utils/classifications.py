@@ -216,10 +216,17 @@ class Particle:
     ) -> Tuple[List[float], List[float]]:
         """Get the positions of a list of particles at time, optionally originating from a zone."""
         if zone is None:
-            lons, lats = zip(*[particle.get_position(time) for particle in particles])
+            if time == -1:
+                lons, lats = zip(*[particle.final_position for particle in particles])
+            else:
+                lons, lats = zip(*[particle.get_position(time) for particle in particles])
         else:
-            lons, lats = zip(
-                *[particle.get_position(time) for particle in particles if particle.genetic_lineage is zone])
+            if time == -1:
+                lons, lats = zip(
+                    *[particle.final_position for particle in particles if particle.genetic_lineage is zone])
+            else:
+                lons, lats = zip(
+                    *[particle.get_position(time) for particle in particles if particle.genetic_lineage is zone])
         return lons, lats
 
 
