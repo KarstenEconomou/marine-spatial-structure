@@ -320,7 +320,7 @@ class Module:
                     start_and_end_particles += 1
 
         if start_particles == 0:
-            self.coherence = 0
+            self.coherence = 1
         else:
             self.coherence = start_and_end_particles / start_particles
 
@@ -337,7 +337,7 @@ class Module:
                     end_and_start_particles += 1
 
         if end_particles == 0:
-            self.fortress = 0
+            self.fortress = 1
         else:
             self.fortress = end_and_start_particles / end_particles
 
@@ -346,16 +346,19 @@ class Module:
         # Get nodes in module
         module_hexbins = tuple(hexbin for hexbin in all_hexbins if hexbin.module == self)
 
-        # Loop through all permutations of nodes in module
-        entropy = 0
-        for source, target in permutations(module_hexbins, 2):
-            node_prob = transition_matrix[source.int, target.int]
+        if len(module_hexbins) == 1:
+            self.mixing = 1
+        else:
+            # Loop through all permutations of nodes in module
+            entropy = 0
+            for source, target in permutations(module_hexbins, 2):
+                node_prob = transition_matrix[source.int, target.int]
 
-            if node_prob != 0:
-                module_prob = sum(transition_matrix[source.int, hexbin.int] for hexbin in module_hexbins)
-                entropy += (node_prob / module_prob) * log10(node_prob / module_prob)
+                if node_prob != 0:
+                    module_prob = sum(transition_matrix[source.int, hexbin.int] for hexbin in module_hexbins)
+                    entropy += (node_prob / module_prob) * log10(node_prob / module_prob)
 
-        self.mixing = -entropy / (len(module_hexbins) * log10(len(module_hexbins)))
+            self.mixing = -entropy / (len(module_hexbins) * log10(len(module_hexbins)))
 
     @staticmethod
     def read_clu(
