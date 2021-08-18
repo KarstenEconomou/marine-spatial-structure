@@ -13,7 +13,9 @@ Read the full report, [Assessing spatial structure in marine systems: Developing
 
 ## Data used
 
-The particle tracking simulations use the Bedford Institute of Oceanography North Atlantic model (BNAM) as field data.
+The particle tracking simulation, contributed to by Dr. Kira Krumhansl, Dr. Wendy Gentleman, and Karsten Economou (not included in this repository), uses the Bedford Institute of Oceanography North Atlantic Ocean model (BNAM) for field data.
+
+The species distribution model used was provided by Dr. Ben Lowen.
 
 ## Usage
 
