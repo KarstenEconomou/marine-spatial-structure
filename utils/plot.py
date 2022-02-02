@@ -121,7 +121,7 @@ def plot_modules(
         cmap = mpl.colors.ListedColormap(colors[0:number_of_modules])
         norm = mpl.colors.BoundaryNorm(ticks, number_of_modules + 1)
 
-        cb = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, pad=0.02)
+        cb = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, pad=0.02, fraction=0.046)
         cb.set_ticks(tick_locs[1::2])
         cb.set_ticklabels(ticks[0:number_of_modules:2].astype(int))
         cb.set_label(colorbar_label, labelpad=5)
