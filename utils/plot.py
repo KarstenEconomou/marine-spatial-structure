@@ -8,14 +8,25 @@ import cartopy.feature as cfeature
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 from numpy.typing import ArrayLike
 
 sys.path.insert(1, str(Path.cwd() / 'utils'))
-from classifications import Zone, GeneticZone, Particle  # noqa: E402
+from geneticlineage import GeneticLineage  # noqa: E402
+from particle import Particle  # noqa: E402
+from zone import Zone  # noqa: E402
 
 HEX_FACE_ALPHA = 0.8
 HEX_EDGE_ALPHA = 0.9
 HEX_LINE_WIDTH = 0.05
+
+DEFAULT_CMAP = 'viridis'
+
+TICK_PAD = 2
+LABEL_PAD = 4
+
+TICK_FONT_SIZE = 7
+LABEL_FONT_SIZE = TICK_FONT_SIZE
 
 
 def create_figure() -> plt.Figure:
@@ -23,10 +34,18 @@ def create_figure() -> plt.Figure:
     return plt.figure(dpi=1200, facecolor='white')
 
 
-def create_axis(fig: plt.Figure, title: Optional[str]) -> plt.Axes:
+def create_axis(fig: plt.Figure, title: Optional[str] = None) -> plt.Axes:
     """Create axis containing a land mask over the domain of interest."""
-    ax = fig.add_subplot(projection=ccrs.Miller(), title=title)
+    ax = fig.add_subplot(projection=ccrs.PlateCarree(), title=title)
     ax.set_extent([-77.3, -46.83, 34.19, 52.2])
+
+    ax.set_xticks([-75, -70, -65, -60, -55, -50], crs=ccrs.PlateCarree())
+    ax.xaxis.set_major_formatter(LONGITUDE_FORMATTER)
+    ax.xaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
+
+    ax.set_yticks([35, 37.5, 40, 42.5, 45, 47.5, 50, 52.5], crs=ccrs.PlateCarree())
+    ax.yaxis.set_major_formatter(LATITUDE_FORMATTER)
+    ax.yaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
 
     land = cfeature.NaturalEarthFeature(
         'physical',
@@ -56,7 +75,7 @@ def add_other_hexagons(ax: plt.Axes, domain_hexagons: ArrayLike) -> None:
         )
 
 
-def add_boundaries(ax: plt.Axes, zones: Dict[Zone, GeneticZone]) -> None:
+def add_boundaries(ax: plt.Axes, zones: Dict[Zone, GeneticLineage]) -> None:
     """Draw boundaries."""
     for zone in zones.values():
         ax.plot(
@@ -65,6 +84,12 @@ def add_boundaries(ax: plt.Axes, zones: Dict[Zone, GeneticZone]) -> None:
             linewidth='0.25',
             transform=ccrs.PlateCarree(),
         )
+
+
+def save_plot(path: Union[str, Path]):
+    """Save a plot."""
+    pad_inches = 0.05
+    plt.savefig(path, bbox_inches='tight', pad_inches=pad_inches)
 
 
 def plot_hexbins(
@@ -78,16 +103,16 @@ def plot_hexbins(
     add_other_hexagons(ax, hexagons)
 
     if path is not None:
-        plt.savefig(path, bbox_inches='tight', pad_inches=0)
+        save_plot(path)
 
 
 def plot_modules(
     hexagons: ArrayLike,
     colors: ArrayLike,
     other_hexagons: Optional[ArrayLike] = None,
-    zones: Optional[Dict[Zone, GeneticZone]] = None,
+    zones: Optional[Dict[Zone, GeneticLineage]] = None,
     colorbar: bool = False,
-    colorbar_label: str = 'Module',
+    colorbar_label: Optional[str] = None,
     title: Optional[str] = None,
     path: Optional[Union[str, Path]] = None,
  ) -> None:
@@ -124,17 +149,18 @@ def plot_modules(
         cb = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, pad=0.02, fraction=0.046)
         cb.set_ticks(tick_locs[1::2])
         cb.set_ticklabels(ticks[0:number_of_modules:2].astype(int))
-        cb.set_label(colorbar_label, labelpad=5)
+        cb.set_label(colorbar_label, size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
+        cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
 
     if path is not None:
-        plt.savefig(path, bbox_inches='tight', pad_inches=0)
+        save_plot(path)
 
 
 def plot_quality(
     hexagons: ArrayLike,
     parameter: str = 'coherence',
     other_hexagons: Optional[ArrayLike] = None,
-    cmap: str = 'magma',
+    cmap: str = DEFAULT_CMAP,
     colorbar: bool = True,
     colorbar_label: Optional[str] = None,
     title: Optional[str] = None,
@@ -170,52 +196,15 @@ def plot_quality(
     if colorbar:
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
         sm.set_array([])
-        plt.colorbar(sm, label=colorbar_label, pad=0.02, fraction=0.046)
+        cb = plt.colorbar(sm, pad=0.02, fraction=0.046)
+        cb.set_label(colorbar_label, size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
+        cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
 
     if other_hexagons is not None:
         add_other_hexagons(ax, other_hexagons)
 
     if path is not None:
-        plt.savefig(path, bbox_inches='tight', pad_inches=0)
-
-
-def plot_boundary_persistence(
-    hexagons: ArrayLike,
-    other_hexagons: Optional[ArrayLike] = None,
-    cmap: str = 'cool',
-    colorbar: bool = True,
-    title: Optional[str] = None,
-    path: Optional[Union[str, Path]] = None,
-) -> None:
-    """Plot hexagons coloured by the percentage of solutions in which they act as boundaries."""
-    fig = create_figure()
-    ax = create_axis(fig, title)
-
-    norm = mpl.colors.Normalize(vmin=0, vmax=1)
-    color = mpl.cm.get_cmap(cmap)
-
-    for hexagon in hexagons:
-        face_color = color(norm(hexagon.boundary_persistence))
-        ax.add_patch(mpl.patches.Polygon(
-            hexagon.hex,
-            fc=mpl.colors.to_rgba(face_color, HEX_FACE_ALPHA),
-            ec=(0, 0, 0, HEX_EDGE_ALPHA),
-            lw=HEX_LINE_WIDTH,
-            zorder=2,
-            transform=ccrs.PlateCarree(),
-            )
-        )
-
-    if colorbar:
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
-        sm.set_array([])
-        plt.colorbar(sm, label='Boundary persistence', pad=0.02, fraction=0.046)
-
-    if other_hexagons is not None:
-        add_other_hexagons(ax, other_hexagons)
-
-    if path is not None:
-        plt.savefig(path, bbox_inches='tight', pad_inches=0)
+        save_plot(path)
 
 
 def plot_positions(
@@ -241,7 +230,7 @@ def plot_positions(
     )
 
     if path is not None:
-        plt.savefig(path, bbox_inches='tight', pad_inches=0)
+        save_plot(path)
 
 
 def plot_particles(
@@ -272,12 +261,12 @@ def plot_particles(
     )
 
     if path is not None:
-        plt.savefig(path, bbox_inches='tight', pad_inches=0)
+        save_plot(path)
 
 
 def plot_subpopulations(
     particles: ArrayLike,
-    zones: Dict[Zone, GeneticZone],
+    zones: Dict[Zone, GeneticLineage],
     time: int = 0,
     colors: Optional[ArrayLike] = None,
     title: Optional[str] = None,
@@ -310,4 +299,43 @@ def plot_subpopulations(
         )
 
     if path is not None:
-        plt.savefig(path)
+        save_plot(path)
+
+
+def plot_contourf(
+    positions: ArrayLike,
+    values: ArrayLike,
+    title: Optional[str] = None,
+    cmap: str = DEFAULT_CMAP,
+    colorbar: bool = True,
+    colorbar_label: Optional[str] = None,
+    path: Optional[Union[str, Path]] = None,
+) -> None:
+    fig = create_figure()
+    ax = create_axis(fig, title)
+
+    min_value = min(values)
+    max_value = max(values)
+    norm = plt.Normalize(vmin=min_value, vmax=max_value)
+
+    lats, lons = list(map(list, zip(*positions)))
+
+    ax.tricontourf(
+        lats,
+        lons,
+        list(values), 
+        alpha=1,
+        cmap=cmap,
+        norm=norm,
+        transform=ccrs.PlateCarree(),
+    )
+
+    if colorbar:
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
+        cb = plt.colorbar(sm, pad=0.02, fraction=0.046)
+        cb.set_label(colorbar_label, size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
+        cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
+
+    if path is not None:
+        save_plot(path)

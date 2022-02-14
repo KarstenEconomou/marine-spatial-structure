@@ -1,4 +1,4 @@
-"""Parameters defining the flow network and community detection."""
+"""Parameters defining the simulation, flow network, and community detection."""
 PARTICLE_DENSITY = 1
 
 PLD = 45

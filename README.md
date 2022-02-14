@@ -56,10 +56,10 @@ Used data, temporary files, and most output is not included in this repository. 
 
 1. Process simulated particle trajectories and create a flow network: `network.ipynb`
 2. Run *Infomap*: `detect_communities.ipynb`
-3. Plot and analyze detected communities stored in `.clu` format: `clusters.ipynb`
+3. Plot and analyze detected communities stored in `.clu` format: `modules.ipynb`
 
 ### Utilities
 
 * `plot.py` offers tailored options for plotting particles and hexagons over the domain of interest
-* `classifications.py` is a class framework used throughout post-processing
 * `constants.py` is a centralized hub of constants
+* `geneticlineage.py`, `hexbin.py`, `module.py`, `particle.py`, `particletype.py`, `season.py`, `zone.py` are modules containing classes.
