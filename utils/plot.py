@@ -137,7 +137,7 @@ def plot_modules(
         add_boundaries(ax, zones)
 
     if colorbar:
-        module_colors = [module.color for module in modules if not module.is_small]
+        module_colors = [module.color for module in modules if not module.is_small()]
         number_of_colored_modules = len(module_colors)
 
         ticks = np.arange(1, (number_of_colored_modules + 2))
@@ -145,19 +145,21 @@ def plot_modules(
 
         cmap = mpl.colors.ListedColormap(module_colors)
         norm = mpl.colors.BoundaryNorm(ticks, number_of_colored_modules + 1)
+        sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+        cb = plt.colorbar(sm, ax=ax, pad=0.02, fraction=0.046)
 
-        cb = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, pad=0.02, fraction=0.046)
         cb.set_ticks(tick_locs[1::2])
         cb.set_ticklabels(ticks[0:number_of_colored_modules:2].astype(int))
-        cb.set_label(colorbar_label, size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
         cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
+        
+        cb.set_label(colorbar_label, size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
 
     if path is not None:
         save_plot(path)
 
 
 def plot_quality(
-    hexagons: ArrayLike,
+    modules: ArrayLike,
     parameter: str = 'coherence',
     other_hexagons: Optional[ArrayLike] = None,
     cmap: str = 'cet_rainbow',
@@ -173,32 +175,34 @@ def plot_quality(
     norm = mpl.colors.Normalize(vmin=0, vmax=1)
     color = mpl.cm.get_cmap(cmap)
 
-    for hexagon in hexagons:
-        if hexagon.module.is_small:
-            face_color = '#c7c7c7'
-        elif parameter == 'coherence':
-            face_color = color(norm(hexagon.module.coherence))
-        elif parameter == 'fortress':
-            face_color = color(norm(hexagon.module.fortress))
-        elif parameter == 'mixing':
-            face_color = color(norm(hexagon.module.mixing))
+    for module in modules:
+        if module.is_small():
+            face_color = module.color
         else:
-            raise ValueError('Invalid quality parameter.')
+            if parameter == 'coherence':
+                parameter_value = module.coherence
+            elif parameter == 'fortress':
+                parameter_value = module.fortress
+            elif parameter == 'mixing':
+                parameter_value = module.mixing
 
-        ax.add_patch(mpl.patches.Polygon(
-            hexagon.hex,
-            fc=mpl.colors.to_rgba(face_color, HEX_FACE_ALPHA),
-            ec=(0, 0, 0, HEX_EDGE_ALPHA),
-            lw=HEX_LINE_WIDTH,
-            zorder=2,
-            transform=ccrs.PlateCarree(),
+            face_color = color(norm(parameter_value))
+
+        for hexagon in module.hexbins:
+            ax.add_patch(mpl.patches.Polygon(
+                hexagon.hex,
+                fc=mpl.colors.to_rgba(face_color, HEX_FACE_ALPHA),
+                ec=(0, 0, 0, HEX_EDGE_ALPHA),
+                lw=HEX_LINE_WIDTH,
+                zorder=2,
+                transform=ccrs.PlateCarree(),
+                )
             )
-        )
 
     if colorbar:
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
-        cb = plt.colorbar(sm, pad=0.02, fraction=0.046)
+        cb = plt.colorbar(sm, ax=ax, pad=0.02, fraction=0.046)
         cb.set_label(colorbar_label, size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
         cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
 

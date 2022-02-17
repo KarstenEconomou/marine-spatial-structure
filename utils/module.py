@@ -28,11 +28,23 @@ class Module:
 
         # Color information
         self.color: Optional[str] = None
-        self.is_small: Optional[bool] = None
 
     def __eq__(self, other: 'Module') -> bool:
-        """Compare module index equality."""
+        """Compare module indices on equal to call."""
         return self.index == other.index
+
+    def __le__(self, other: 'Module') -> bool:
+        """Compare module indices on less than call."""
+        return self.index <= other.index
+
+    def is_small(self) -> bool:
+        """Return whether the module is small."""
+        small_threshold = 3
+        return len(self.hexbins) <= small_threshold
+
+    def associate_hexbins(self, hexbins: List['Hexbin']) -> None:
+        """Associate the constituent hexbins with the module."""
+        self.hexbins = [hexbin for hexbin in hexbins if hexbin.module.index == self.index]
 
     def calculate_coherence(self, trajectories: Sequence[Tuple['Hexbin', 'Hexbin']]) -> None:
         """Calculate the module coherence ratio."""
@@ -104,3 +116,22 @@ class Module:
             display(clu)
 
         return tuple(module_map.values()), hexbins
+
+    @staticmethod
+    def smooth_modules(
+        modules: List['Module'],
+        colors: List[str],
+        small_color: str,
+    ) -> None:
+        """Cycles through modules to set colors and re-index."""
+        number_of_colored_modules = len([module for module in modules if not module.is_small()])
+        module_index = 1 
+        small_module_index = 1
+        for module in modules:
+            if module.is_small():
+                module.color = small_color
+                module.index = number_of_colored_modules + small_module_index
+                small_module_index += 1
+            else:
+                module.color = colors[module_index - 1]
+                module_index += 1
