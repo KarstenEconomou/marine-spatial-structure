@@ -2,7 +2,7 @@
 import sys
 from itertools import permutations
 from math import log10
-from typing import Union, Sequence, Tuple, Dict, TYPE_CHECKING
+from typing import List, Union, Sequence, Tuple, Dict, Optional
 from pathlib import Path
 
 import numpy as np
@@ -19,10 +19,16 @@ class Module:
     def __init__(self, module_index: int) -> None:
         """Initialize index of module."""
         self.index: int = module_index
+        self.hexbins: Optional[List['Hexbin']] = None
 
-        self.coherence: Union[None, float] = None
-        self.fortress: Union[None, float] = None
-        self.mixing: Union[None, float] = None
+        # Quality parameters
+        self.coherence: Optional[float] = None
+        self.fortress: Optional[float] = None
+        self.mixing: Optional[float] = None
+
+        # Color information
+        self.color: Optional[str] = None
+        self.is_small: Optional[bool] = None
 
     def __eq__(self, other: 'Module') -> bool:
         """Compare module index equality."""

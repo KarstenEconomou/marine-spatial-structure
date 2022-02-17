@@ -5,6 +5,7 @@ from typing import Union, Dict, Optional
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import colorcet as cc
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,11 +17,9 @@ from geneticlineage import GeneticLineage  # noqa: E402
 from particle import Particle  # noqa: E402
 from zone import Zone  # noqa: E402
 
-HEX_FACE_ALPHA = 0.8
+HEX_FACE_ALPHA = 0.85
 HEX_EDGE_ALPHA = 0.9
 HEX_LINE_WIDTH = 0.05
-
-DEFAULT_CMAP = 'viridis'
 
 TICK_PAD = 2
 LABEL_PAD = 4
@@ -43,7 +42,7 @@ def create_axis(fig: plt.Figure, title: Optional[str] = None) -> plt.Axes:
     ax.xaxis.set_major_formatter(LONGITUDE_FORMATTER)
     ax.xaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
 
-    ax.set_yticks([35, 37.5, 40, 42.5, 45, 47.5, 50, 52.5], crs=ccrs.PlateCarree())
+    ax.set_yticks([35, 40, 45, 50], crs=ccrs.PlateCarree())
     ax.yaxis.set_major_formatter(LATITUDE_FORMATTER)
     ax.yaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
 
@@ -107,8 +106,7 @@ def plot_hexbins(
 
 
 def plot_modules(
-    hexagons: ArrayLike,
-    colors: ArrayLike,
+    modules: ArrayLike,
     other_hexagons: Optional[ArrayLike] = None,
     zones: Optional[Dict[Zone, GeneticLineage]] = None,
     colorbar: bool = False,
@@ -120,16 +118,17 @@ def plot_modules(
     fig = create_figure()
     ax = create_axis(fig, title)
 
-    for hexagon in hexagons:
-        ax.add_patch(mpl.patches.Polygon(
-            hexagon.hex,
-            fc=mpl.colors.to_rgba(colors[hexagon.module.index - 1], HEX_FACE_ALPHA),
-            ec=(0, 0, 0, HEX_EDGE_ALPHA),
-            lw=HEX_LINE_WIDTH,
-            zorder=2,
-            transform=ccrs.PlateCarree(),
+    for module in modules:
+        for hexagon in module.hexbins:
+            ax.add_patch(mpl.patches.Polygon(
+                hexagon.hex,
+                fc=mpl.colors.to_rgba(module.color, HEX_FACE_ALPHA),
+                ec=(0, 0, 0, HEX_EDGE_ALPHA),
+                lw=HEX_LINE_WIDTH,
+                zorder=2,
+                transform=ccrs.PlateCarree(),
+                )
             )
-        )
 
     if other_hexagons is not None:
         add_other_hexagons(ax, other_hexagons)
@@ -138,17 +137,18 @@ def plot_modules(
         add_boundaries(ax, zones)
 
     if colorbar:
-        number_of_modules = max(hexagon.module.index for hexagon in hexagons)
+        module_colors = [module.color for module in modules if not module.is_small]
+        number_of_colored_modules = len(module_colors)
 
-        ticks = np.arange(1, (number_of_modules + 2))
+        ticks = np.arange(1, (number_of_colored_modules + 2))
         tick_locs = (np.arange(len(ticks)) + 0.5) * len(ticks) / len(ticks)
 
-        cmap = mpl.colors.ListedColormap(colors[0:number_of_modules])
-        norm = mpl.colors.BoundaryNorm(ticks, number_of_modules + 1)
+        cmap = mpl.colors.ListedColormap(module_colors)
+        norm = mpl.colors.BoundaryNorm(ticks, number_of_colored_modules + 1)
 
         cb = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, pad=0.02, fraction=0.046)
         cb.set_ticks(tick_locs[1::2])
-        cb.set_ticklabels(ticks[0:number_of_modules:2].astype(int))
+        cb.set_ticklabels(ticks[0:number_of_colored_modules:2].astype(int))
         cb.set_label(colorbar_label, size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
         cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
 
@@ -160,7 +160,7 @@ def plot_quality(
     hexagons: ArrayLike,
     parameter: str = 'coherence',
     other_hexagons: Optional[ArrayLike] = None,
-    cmap: str = DEFAULT_CMAP,
+    cmap: str = 'cet_rainbow',
     colorbar: bool = True,
     colorbar_label: Optional[str] = None,
     title: Optional[str] = None,
@@ -174,7 +174,9 @@ def plot_quality(
     color = mpl.cm.get_cmap(cmap)
 
     for hexagon in hexagons:
-        if parameter == 'coherence':
+        if hexagon.module.is_small:
+            face_color = '#c7c7c7'
+        elif parameter == 'coherence':
             face_color = color(norm(hexagon.module.coherence))
         elif parameter == 'fortress':
             face_color = color(norm(hexagon.module.fortress))
@@ -306,7 +308,7 @@ def plot_contourf(
     positions: ArrayLike,
     values: ArrayLike,
     title: Optional[str] = None,
-    cmap: str = DEFAULT_CMAP,
+    cmap: str = 'viridis',
     colorbar: bool = True,
     colorbar_label: Optional[str] = None,
     path: Optional[Union[str, Path]] = None,
