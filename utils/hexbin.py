@@ -51,14 +51,20 @@ class Hexbin:
         elif isinstance(other, str):
             return self.h3 == other
 
+    def __lt__(self, other: 'Hexbin') -> bool:
+        """Compare h3 indices on less than call."""
+        return self.h3 < other.h3
+
     def contains(self, lon: float, lat: float) -> bool:
         """Return if a query point is within the hexbin."""
         return Polygon(self.hex).contains(Point(lon, lat))
 
-    def get_adjacent_bins(self, domain_bins: Sequence['Hexbin']) -> Tuple[str, ...]:
-        """Find adjacent bins that are within the binned domain."""
-        ring = h3.k_ring(self.h3, 1)
-        return tuple(hexbin for hexbin in ring if hexbin in domain_bins and hexbin != self.h3)
+    def get_adjacent_bins(self, other_bins: Sequence['Hexbin'], k: int = 1) -> Tuple[str, ...]:
+        """Find adjacent bins that are in the given bin list."""
+        other_bins = tuple(other_bin.h3 for other_bin in other_bins)
+
+        ring = h3.k_ring(self.h3, k)
+        return tuple(hexbin for hexbin in ring if hexbin in other_bins and hexbin != self.h3)
 
     def is_boundary(self, domain: Sequence['Hexbin'], hexbin_dict: Dict[str, 'Hexbin']) -> bool:
         """Check if hexbin is acting as a boundary."""

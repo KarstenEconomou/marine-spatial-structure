@@ -1,4 +1,10 @@
-"""Parameters defining the simulation, flow network, and community detection."""
+"""Parameters used throughout the pre- and post-procressing pipeline."""
+# Domain bounding box
+LEFT_BOUND = -77.3
+RIGHT_BOUND = -47.1
+TOP_BOUND = 51.9
+BOTTOM_BOUND = 34.8
+
 PARTICLE_DENSITY = 1
 
 PLD = 45

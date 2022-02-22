@@ -9,6 +9,7 @@ from numpy.typing import ArrayLike
 from scipy.interpolate import griddata
 
 sys.path.insert(1, str(Path.cwd() / 'utils'))
+from constants import PLD, LEFT_BOUND, RIGHT_BOUND, TOP_BOUND, BOTTOM_BOUND
 from geneticlineage import GeneticLineage
 from zone import Zone
 
@@ -16,11 +17,10 @@ from zone import Zone
 class Particle:
     """Represents a particle."""
 
-    def __init__(self, trajectory_lons: ArrayLike, trajectory_lats: ArrayLike, trajectory_temps: ArrayLike) -> None:
+    def __init__(self, trajectory_lons: ArrayLike, trajectory_lats: ArrayLike) -> None:
         """Initialize a particle by its trajectory."""
         self.lons: ArrayLike = trajectory_lons
         self.lats: ArrayLike = trajectory_lats
-        self.temps: ArrayLike = trajectory_temps
 
         self.genetic_lineage: Union[None, Zone] = None
         self.final_position: Tuple[float, float] = self.get_position(-1)
@@ -124,9 +124,9 @@ class Particle:
         return settled_particles
 
     @staticmethod
-    def leaves_domain(mlds: ArrayLike) -> bool:
-        """Determines if a particle left the domain."""
-        if 0 in mlds or ma.is_masked(mlds):
+    def is_beached(mlds: ArrayLike) -> bool:
+        """Determines if a particle was beached."""
+        if mlds[PLD] == 0 or ma.is_masked(mlds[PLD]):
             return True
         return False
 

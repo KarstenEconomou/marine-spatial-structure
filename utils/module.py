@@ -33,9 +33,9 @@ class Module:
         """Compare module indices on equal to call."""
         return self.index == other.index
 
-    def __le__(self, other: 'Module') -> bool:
+    def __lt__(self, other: 'Module') -> bool:
         """Compare module indices on less than call."""
-        return self.index <= other.index
+        return self.index < other.index
 
     def is_small(self) -> bool:
         """Return whether the module is small."""
@@ -109,29 +109,55 @@ class Module:
         clu = pd.read_csv(file, sep=' ', comment='#', names=['node', 'module', 'flow'])
 
         module_map = dict((module, Module(module)) for module in clu['module'].unique())
-        hexbins = tuple(Hexbin.from_integer(node, label_map, module_map[module])
-                        for node, module in zip(clu['node'], clu['module']))
+        hexbins = [Hexbin.from_integer(node, label_map, module_map[module])
+                        for node, module in zip(clu['node'], clu['module'])]
 
         if display_clu:
             display(clu)
 
-        return tuple(module_map.values()), hexbins
+        return list(module_map.values()), hexbins
 
     @staticmethod
     def smooth_modules(
         modules: List['Module'],
+        null_module: 'Module',
+        hexbins: Sequence['Hexbin'],
         colors: List[str],
-        small_color: str,
-    ) -> None:
-        """Cycles through modules to set colors and re-index."""
-        number_of_colored_modules = len([module for module in modules if not module.is_small()])
-        module_index = 1 
-        small_module_index = 1
+    ) -> List['Module']:
+        """Cycles through modules to set colors, grey bad hexbins, and re-index."""
+
+        def grey_hexbin(hexagon: 'Hexbin') -> None:
+            """Removes a hexbin from a module and sets its module to the null module."""
+            hexagon.module = null_module  # Set module to null module
+            null_module.hexbins.append(hexagon)  # Add to null module hexbins
+
+        null_module.hexbins = []
+        new_modules = [null_module]
+        module_index = 1
         for module in modules:
-            if module.is_small():
-                module.color = small_color
-                module.index = number_of_colored_modules + small_module_index
-                small_module_index += 1
-            else:
+            is_chain_module = True
+
+            for hexbin in module.hexbins:
+                number_of_adjacent_bins = len(hexbin.get_adjacent_bins(module.hexbins))
+                if number_of_adjacent_bins == 0:
+                    # Isolated hexbin
+                    grey_hexbin(hexbin)
+                elif number_of_adjacent_bins >= 3:
+                    # Module doesn't consist only of hexbin chains
+                    is_chain_module = False
+            
+            # Grey all hexbins in small or chain module
+            if is_chain_module or module.is_small():
+                for hexbin in module.hexbins:
+                    grey_hexbin(hexbin)
+
+            # Color and re-index module if it still contains any hexbins
+            module.associate_hexbins(hexbins)
+            if len(module.hexbins) != 0:
+                module.index = module_index
                 module.color = colors[module_index - 1]
+                new_modules.append(module)
+
                 module_index += 1
+        
+        return new_modules

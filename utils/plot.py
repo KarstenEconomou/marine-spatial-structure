@@ -13,6 +13,7 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 from numpy.typing import ArrayLike
 
 sys.path.insert(1, str(Path.cwd() / 'utils'))
+from constants import LEFT_BOUND, RIGHT_BOUND, TOP_BOUND, BOTTOM_BOUND
 from geneticlineage import GeneticLineage  # noqa: E402
 from particle import Particle  # noqa: E402
 from zone import Zone  # noqa: E402
@@ -30,13 +31,14 @@ LABEL_FONT_SIZE = TICK_FONT_SIZE
 
 def create_figure() -> plt.Figure:
     """Create figure."""
-    return plt.figure(dpi=1200, facecolor='white')
+    return plt.figure(dpi=900, facecolor='white')
 
 
 def create_axis(fig: plt.Figure, title: Optional[str] = None) -> plt.Axes:
     """Create axis containing a land mask over the domain of interest."""
     ax = fig.add_subplot(projection=ccrs.PlateCarree(), title=title)
-    ax.set_extent([-77.3, -46.83, 34.19, 52.2])
+    pad = 0.25
+    ax.set_extent([LEFT_BOUND - pad, RIGHT_BOUND + pad, BOTTOM_BOUND - pad, TOP_BOUND + pad])
 
     ax.set_xticks([-75, -70, -65, -60, -55, -50], crs=ccrs.PlateCarree())
     ax.xaxis.set_major_formatter(LONGITUDE_FORMATTER)
@@ -137,7 +139,7 @@ def plot_modules(
         add_boundaries(ax, zones)
 
     if colorbar:
-        module_colors = [module.color for module in modules if not module.is_small()]
+        module_colors = [module.color for module in modules if module.index != 0]
         number_of_colored_modules = len(module_colors)
 
         ticks = np.arange(1, (number_of_colored_modules + 2))
@@ -176,9 +178,11 @@ def plot_quality(
     color = mpl.cm.get_cmap(cmap)
 
     for module in modules:
-        if module.is_small():
+        if module.index == 0:
+            # Module is the null module
             face_color = module.color
         else:
+            # Module should be colored according to the desire parameter
             if parameter == 'coherence':
                 parameter_value = module.coherence
             elif parameter == 'fortress':
