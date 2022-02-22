@@ -59,12 +59,21 @@ class Hexbin:
         """Return if a query point is within the hexbin."""
         return Polygon(self.hex).contains(Point(lon, lat))
 
-    def get_adjacent_bins(self, other_bins: Sequence['Hexbin'], k: int = 1) -> Tuple[str, ...]:
+    def get_adjacent_bins(
+        self,
+        other_bins: Sequence['Hexbin'],
+        hexbin_dict: Optional[Dict[str, 'Hexbin']] = None,
+        k: int = 1
+    ) -> Union[Tuple[str, ...], Tuple['Hexbin', ...]]:
         """Find adjacent bins that are in the given bin list."""
         other_bins = tuple(other_bin.h3 for other_bin in other_bins)
 
         ring = h3.k_ring(self.h3, k)
-        return tuple(hexbin for hexbin in ring if hexbin in other_bins and hexbin != self.h3)
+        adjacent_bins = tuple(hexbin for hexbin in ring if hexbin in other_bins and hexbin != self.h3)
+
+        if hexbin_dict is not None:
+            return tuple(hexbin_dict[hexbin] for hexbin in adjacent_bins)
+        return adjacent_bins
 
     def is_boundary(self, domain: Sequence['Hexbin'], hexbin_dict: Dict[str, 'Hexbin']) -> bool:
         """Check if hexbin is acting as a boundary."""

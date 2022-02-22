@@ -121,7 +121,7 @@ class Module:
     def smooth_modules(
         modules: List['Module'],
         null_module: 'Module',
-        hexbins: Sequence['Hexbin'],
+        hexbin_dict: Dict[str, 'Hexbin'],
         colors: List[str],
     ) -> List['Module']:
         """Cycles through modules to set colors, grey bad hexbins, and re-index."""
@@ -135,24 +135,26 @@ class Module:
         new_modules = [null_module]
         module_index = 1
         for module in modules:
-            is_chain_module = True
-
             for hexbin in module.hexbins:
-                number_of_adjacent_bins = len(hexbin.get_adjacent_bins(module.hexbins))
+                adjacent_bins = hexbin.get_adjacent_bins(module.hexbins, hexbin_dict=hexbin_dict)
+                number_of_adjacent_bins = len(adjacent_bins)
                 if number_of_adjacent_bins == 0:
                     # Isolated hexbin
                     grey_hexbin(hexbin)
-                elif number_of_adjacent_bins >= 3:
-                    # Module doesn't consist only of hexbin chains
-                    is_chain_module = False
+                elif number_of_adjacent_bins == 1:
+                    other_bin = adjacent_bins[0]
+                    if len(other_bin.get_adjacent_bins(module.hexbins, hexbin_dict=hexbin_dict)) == 1:
+                        # Isolated two hexbins
+                        grey_hexbin(hexbin)
+                        grey_hexbin(other_bin)
             
-            # Grey all hexbins in small or chain module
-            if is_chain_module or module.is_small():
+            # Grey all hexbins if module is small
+            if module.is_small():
                 for hexbin in module.hexbins:
                     grey_hexbin(hexbin)
 
             # Color and re-index module if it still contains any hexbins
-            module.associate_hexbins(hexbins)
+            module.associate_hexbins(hexbin_dict.values())
             if len(module.hexbins) != 0:
                 module.index = module_index
                 module.color = colors[module_index - 1]
