@@ -20,6 +20,8 @@ from module import Module  # noqa: E402
 from particle import Particle  # noqa: E402
 from zone import Zone  # noqa: E402
 
+OBJ_ZORDER = 0
+
 HEX_FACE_ALPHA = 1
 HEX_EDGE_ALPHA = 1
 HEX_LINE_WIDTH = 0.04
@@ -57,7 +59,7 @@ def create_axis(fig: plt.Figure, title: Optional[str] = None, ticks: bool = True
         '10m',
         edgecolor='black',
         linewidth=0.1,
-        zorder=3,
+        zorder=OBJ_ZORDER + 2,
         facecolor=cfeature.COLORS['land'],
     )
     ax.add_feature(land)
@@ -73,7 +75,7 @@ def add_other_hexagons(ax: plt.Axes, domain_hexagons: Sequence[Hexbin]) -> None:
             fc=(0, 0, 0, 0),
             ec=(0, 0, 0, HEX_EDGE_ALPHA),
             lw=HEX_LINE_WIDTH,
-            zorder=1,
+            zorder=OBJ_ZORDER,
             transform=ccrs.PlateCarree(),
             )
         )
@@ -86,6 +88,7 @@ def add_boundaries(ax: plt.Axes, zones: Dict[Zone, GeneticLineage]) -> None:
             *zone.poly.exterior.xy,
             color='black',
             linewidth='0.25',
+            zorder=OBJ_ZORDER + 1,
             transform=ccrs.PlateCarree(),
         )
 
@@ -131,7 +134,7 @@ def plot_modules(
                 fc=mpl.colors.to_rgba(module.color, HEX_FACE_ALPHA),
                 ec=(0, 0, 0, HEX_EDGE_ALPHA),
                 lw=HEX_LINE_WIDTH,
-                zorder=2,
+                zorder=OBJ_ZORDER,
                 transform=ccrs.PlateCarree(),
                 )
             )
@@ -202,7 +205,7 @@ def plot_quality(
                 fc=mpl.colors.to_rgba(face_color, HEX_FACE_ALPHA),
                 ec=(0, 0, 0, HEX_EDGE_ALPHA),
                 lw=HEX_LINE_WIDTH,
-                zorder=2,
+                zorder=OBJ_ZORDER,
                 transform=ccrs.PlateCarree(),
                 )
             )
@@ -244,7 +247,7 @@ def plot_flow(
             fc=mpl.colors.to_rgba(color(norm(hexagon.flow)), HEX_FACE_ALPHA),
             ec=(0, 0, 0, HEX_EDGE_ALPHA),
             lw=HEX_LINE_WIDTH,
-            zorder=2,
+            zorder=OBJ_ZORDER,
             transform=ccrs.PlateCarree(),
             )
         )
@@ -282,6 +285,7 @@ def plot_positions(
         marker='o',
         linewidth=0.0,
         color=color,
+        zorder=OBJ_ZORDER,
         transform=ccrs.PlateCarree(),
     )
 
@@ -291,7 +295,7 @@ def plot_positions(
 
 def plot_particles(
     particles: Sequence[Particle],
-    time: int = 0,
+    time: int,
     color: str = 'lightblue',
     title: Optional[str] = None,
     path: Optional[Union[str, Path]] = None,
@@ -301,9 +305,9 @@ def plot_particles(
     ax = create_axis(fig, title)
 
     if time == -1:
-        lons, lats = zip(*[particle.final_position for particle in particles])
+        lons, lats = zip(*[particle.settlement_position for particle in particles])
     else:
-        lons, lats = Particle.get_positions(particles, time=time)
+        lons, lats = Particle.get_positions(particles, time)
 
     ax.scatter(
         lons,
@@ -313,6 +317,7 @@ def plot_particles(
         marker='o',
         linewidth=0.0,
         color=color,
+        zorder=OBJ_ZORDER,
         transform=ccrs.PlateCarree(),
     )
 
@@ -322,8 +327,8 @@ def plot_particles(
 
 def plot_subpopulations(
     particles: Sequence[Particle],
+    time: int,
     zones: Dict[Zone, GeneticLineage],
-    time: int = 0,
     colors: Optional[ArrayLike] = None,
     title: Optional[str] = None,
     path: Optional[Union[str, Path]] = None,
@@ -337,11 +342,11 @@ def plot_subpopulations(
 
     add_boundaries(ax, zones)
 
-    for i, zone in enumerate(zones.keys()):
+    for color, zone in zip(colors, zones.keys()):
         if time == -1:
-            lons, lats = zip(*[particle.final_position for particle in particles if particle.genetic_lineage is zone])
+            lons, lats = zip(*[particle.settlement_position for particle in particles if particle.genetic_lineage is zone])
         else:
-            lons, lats = Particle.get_positions(particles, time=time, zone=zone)
+            lons, lats = Particle.get_positions(particles, time, zone=zone)
 
         ax.scatter(
             lons,
@@ -350,7 +355,8 @@ def plot_subpopulations(
             s=0.2,
             marker='o',
             linewidth=0.0,
-            color=colors[i],
+            color=color,
+            zorder=OBJ_ZORDER,
             transform=ccrs.PlateCarree(),
         )
 
@@ -383,6 +389,7 @@ def plot_contourf(
         alpha=1,
         cmap=cmap,
         norm=norm,
+        zorder=OBJ_ZORDER,
         transform=ccrs.PlateCarree(),
     )
 

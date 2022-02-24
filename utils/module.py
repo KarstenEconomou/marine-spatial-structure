@@ -129,7 +129,7 @@ class Module:
         return list(module_map.values()), hexbins
 
     @staticmethod
-    def smooth_modules(
+    def remove_noise(
         modules: List['Module'],
         null_module: 'Module',
         hexbin_dict: Dict[str, 'Hexbin'],

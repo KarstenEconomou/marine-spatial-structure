@@ -1,7 +1,7 @@
 """Defines the ParticleType strategy design pattern."""
 import sys
 from abc import ABC, abstractmethod
-from typing import Dict, Sequence, Optional
+from typing import Dict, Sequence, Optional, Union
 from pathlib import Path
 
 import numpy as np
@@ -11,6 +11,7 @@ sys.path.insert(1, str(Path.cwd() / 'utils'))
 from constants import PLD, CP  # noqa: E402
 from geneticlineage import GeneticLineage  # noqa: E402
 from particle import Particle  # noqa: E402
+from plot import plot_particles, plot_subpopulations  # noqa: E402
 from season import Season  # noqa: E402
 from zone import Zone  # noqa: E402
 
@@ -21,6 +22,12 @@ class ParticleType(ABC):
     @abstractmethod
     def get_simulation(season: Season) -> Dataset:
         """Get the simulation file."""
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def plot(particles: Sequence['Particle'], time: int, zones: Optional[Dict[Zone, GeneticLineage]] = None, path: Optional[Union[str, Path]] = None) -> None:
+        """Assign particle set final positions at PLD."""
         pass
 
     @staticmethod
@@ -52,15 +59,18 @@ class Unrestricted(ParticleType):
         return Dataset(Path.cwd() / 'data' / 'simulations' / f'{season.name}.nc')
 
     @staticmethod
+    def plot(particles: Sequence['Particle'], time: int, zones: Dict[Zone, GeneticLineage] = None, path: Optional[Union[str, Path]] = None) -> None:
+        """Plot particles."""
+        plot_particles(particles, time, path=path)
+
+    @staticmethod
     def filter_initial_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
-        """Filter the initial positions of a particle set."""
-        # Unrestricted spawn
+        """No initial filter required."""
         return particles
 
     @staticmethod
     def filter_final_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
-        """Filter the final positions of a particle set."""
-        # Assign final positions at time PLD
+        """Assign particle set final positions at PLD."""
         for particle in particles:
             particle.final_position = particle.get_position(PLD)
 
@@ -76,15 +86,19 @@ class Fixed(ParticleType):
         return Dataset(Path.cwd() / 'data' / 'simulations' / f'{season.name}_fixed.nc')
 
     @staticmethod
+    def plot(particles: Sequence['Particle'], time: int, zones: Dict[Zone, GeneticLineage] = None, path: Optional[Union[str, Path]] = None) -> None:
+        """Plot particles."""
+        plot_particles(particles, time, path=path)
+
+    @staticmethod
     def filter_initial_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
-        """Filter the initial positions of a particle set."""
+        """No initial filter required."""
         # Unrestricted spawn
         return particles
 
     @staticmethod
     def filter_final_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
-        """Filter the final positions of a particle set."""
-        # Assign final positions at time PLD
+        """Assign particle set final positions at PLD."""
         for particle in particles:
             particle.final_position = particle.get_position(PLD)
 
@@ -99,6 +113,11 @@ class Restricted(ParticleType):
     def get_simulation(season: Season):
         """Get the simulation file."""
         return Dataset(Path.cwd() / 'data' / 'simulations' / f'{season.name}.nc')
+
+    @staticmethod
+    def plot(particles: Sequence['Particle'], time: int, zones: Dict[Zone, GeneticLineage], path: Optional[Union[str, Path]] = None) -> None:
+        """Plot subpopulations of particles."""
+        plot_subpopulations(particles, time, zones=zones, path=path)
         
     @staticmethod
     def filter_initial_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage]) -> Sequence[Particle]:

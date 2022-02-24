@@ -17,13 +17,15 @@ from zone import Zone
 class Particle:
     """Represents a particle."""
 
-    def __init__(self, trajectory_lons: ArrayLike, trajectory_lats: ArrayLike) -> None:
+    def __init__(self, lons: Sequence[float], lats: Sequence[float], mlds: Sequence[float]) -> None:
         """Initialize a particle by its trajectory."""
-        self.lons: ArrayLike = trajectory_lons
-        self.lats: ArrayLike = trajectory_lats
+        self.lons: Sequence[float] = lons
+        self.lats: Sequence[float] = lats
+        self.mlds: Sequence[float] = mlds
 
         self.genetic_lineage: Union[None, Zone] = None
-        self.final_position: Tuple[float, float] = self.get_position(-1)
+        self.settlement_time: int = PLD
+        self.settlement_position: Tuple[float, float] = self.get_position(self.settlement_time)
 
     def assign_genetic_lineage(self, zones: Dict[Zone, GeneticLineage], allow_undefined=True) -> None:
         """Assigns the particle to be of a genetic lineage based on its starting position."""
@@ -37,7 +39,14 @@ class Particle:
 
     def get_position(self, time: int) -> Tuple[float, float]:
         """Get the coordinates of a particle at the given time in its trajectory."""
-        return self.lons[time], self.lats[time]
+        return (self.lons[time], self.lats[time])
+
+    def is_beached(self) -> bool:
+        """Determines if a particle was beached or out of field domain."""
+        settle_mld = self.mlds[int(self.settlement_time)]
+        if settle_mld == 0 or ma.is_masked(settle_mld):
+            return True
+        return False
 
     @staticmethod
     def filter_unsuitable_particles(
@@ -70,10 +79,11 @@ class Particle:
                 lats = np.copy(full_lats[indices_zone])
                 lons = np.copy(full_lons[indices_zone])
 
-            # Initialize settlement positions
+            # Initialize settlement positions & times
             number_of_particles = len(particles_zone)
             settle_lats = np.zeros(number_of_particles)
             settle_lons = np.zeros(number_of_particles)
+            settle_times = np.zeros(number_of_particles)
 
             # Define the grid points
             grid_points = GeneticLineage.make_points(zone.sdm['lat'], zone.sdm['lon'])
@@ -105,6 +115,7 @@ class Particle:
                 else:
                     settle_lats[settled_particles] = lats[settled_particles]
                     settle_lons[settled_particles] = lons[settled_particles]
+                settle_times[settled_particles] = (PLD - number_of_times) + (time + 1)
 
             # Identify particles that settled originating from zone
             suitable_particles = np.flatnonzero(settle_lats != 0)
@@ -113,22 +124,17 @@ class Particle:
 
             # Record settlement positions
             if competency_period:
-                for particle, lon, lat in zip(
+                for particle, lon, lat, time in zip(
                         settled_particles_zone[zone.zone],
                         settle_lons[suitable_particles],
-                        settle_lats[suitable_particles]
+                        settle_lats[suitable_particles],
+                        settle_times[suitable_particles]
                 ):
-                    particle.final_position = (lon, lat)
+                    particle.settlement_position = (lon, lat)
+                    particle.settlement_time = time
 
         settled_particles = [particle for zone in zones.keys() for particle in settled_particles_zone[zone]]
         return settled_particles
-
-    @staticmethod
-    def is_beached(mlds: ArrayLike) -> bool:
-        """Determines if a particle was beached."""
-        if mlds[PLD] == 0 or ma.is_masked(mlds[PLD]):
-            return True
-        return False
 
     @staticmethod
     def get_particles_from_zone(particles: Sequence['Particle'], zone: Zone) -> List['Particle']:
@@ -138,19 +144,19 @@ class Particle:
     @staticmethod
     def get_positions(
         particles: Sequence['Particle'],
-        time: int = 0,
+        time: int,
         zone: Optional[Zone] = None
     ) -> Tuple[List[float], List[float]]:
         """Get the positions of a list of particles at time, optionally originating from a zone."""
         if zone is None:
             if time == -1:
-                lons, lats = zip(*[particle.final_position for particle in particles])
+                lons, lats = zip(*[particle.settlement_position for particle in particles])
             else:
                 lons, lats = zip(*[particle.get_position(time) for particle in particles])
         else:
             if time == -1:
                 lons, lats = zip(
-                    *[particle.final_position for particle in particles if particle.genetic_lineage is zone])
+                    *[particle.settlement_position for particle in particles if particle.genetic_lineage is zone])
             else:
                 lons, lats = zip(
                     *[particle.get_position(time) for particle in particles if particle.genetic_lineage is zone])
