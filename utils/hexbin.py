@@ -22,16 +22,18 @@ class Hexbin:
         h3_index: str,
         label_map: Optional[Dict[str, int]] = None,
         parent_module: Optional['Module'] = None,
+        flow: Optional['float'] = None
     ) -> None:
         """Initialize by H3 index and define integer index, parent module, and polygon representation."""
         self.h3: str = str(h3_index)
         self.hex: Tuple[Tuple[float, float], ...] = self.__make_hexagon()
         self.module: Module = parent_module
+        self.flow: float = flow
 
         if label_map is not None:
-            self.int: int = label_map[h3_index]
+            self.int = label_map[h3_index]
         else:
-            self.int: None = None
+            self.int = None
 
         self.boundary_persistence: Union[None, float] = None
 
@@ -101,10 +103,11 @@ class Hexbin:
         integer_index: int,
         label_map: Dict[str, int],
         parent_module: Optional['Module'] = None,
+        flow: Optional[float] = None,
     ) -> 'Hexbin':
         """Initialize by integer index."""
         h3_index = list(label_map.keys())[list(label_map.values()).index(integer_index)]
-        return cls(h3_index, label_map, parent_module)
+        return cls(h3_index, label_map, parent_module, flow)
 
     @classmethod
     def bin_particles(

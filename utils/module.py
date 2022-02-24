@@ -99,18 +99,29 @@ class Module:
 
             self.mixing = -entropy / (len(module_hexbins) * log10(len(module_hexbins)))
 
+    def is_null(self) -> bool:
+        """Returns whether a module is the null module."""
+        return self.index == 0
+
+    @classmethod
+    def make_null_module(cls) -> 'Module':
+        """Make a null module."""
+        null_module = cls(0)
+        null_module.color = '#c7c7c7'
+        return null_module
+
     @staticmethod
     def read_clu(
         file: Union[str, Path],
         label_map: Dict[str, int],
         display_clu: bool = False,
     ) -> Tuple[Tuple['Module', ...], Tuple['Hexbin', ...]]:
-        """Parses the cluster output file of Infomap."""
+        """Parses the clu output file of Infomap."""
         clu = pd.read_csv(file, sep=' ', comment='#', names=['node', 'module', 'flow'])
 
         module_map = dict((module, Module(module)) for module in clu['module'].unique())
-        hexbins = [Hexbin.from_integer(node, label_map, module_map[module])
-                        for node, module in zip(clu['node'], clu['module'])]
+        hexbins = [Hexbin.from_integer(node, label_map, module_map[module], flow)
+                        for node, module, flow  in zip(clu['node'], clu['module'], clu['flow'])]
 
         if display_clu:
             display(clu)

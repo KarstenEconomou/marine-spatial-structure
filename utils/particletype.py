@@ -35,6 +35,12 @@ class ParticleType(ABC):
         """Filter the final positions of a particle set."""
         pass
 
+    @staticmethod
+    @abstractmethod
+    def plot(particles: Sequence[Particle], zones: Optional[Dict[Zone, GeneticLineage]] = None, time: int = 0) -> Sequence[Particle]:
+        """Plot the particle set."""
+        pass
+
 
 class Unrestricted(ParticleType):
     """Class of particles that are free to start and end their trajectories anywhere."""
@@ -46,13 +52,13 @@ class Unrestricted(ParticleType):
         return Dataset(Path.cwd() / 'data' / 'simulations' / f'{season.name}.nc')
 
     @staticmethod
-    def filter_initial_positions(particles: Sequence[Particle]) -> Sequence[Particle]:
+    def filter_initial_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
         """Filter the initial positions of a particle set."""
         # Unrestricted spawn
         return particles
 
     @staticmethod
-    def filter_final_positions(particles: Sequence[Particle]) -> Sequence[Particle]:
+    def filter_final_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
         """Filter the final positions of a particle set."""
         # Assign final positions at time PLD
         for particle in particles:
@@ -70,13 +76,13 @@ class Fixed(ParticleType):
         return Dataset(Path.cwd() / 'data' / 'simulations' / f'{season.name}_fixed.nc')
 
     @staticmethod
-    def filter_initial_positions(particles: Sequence[Particle]) -> Sequence[Particle]:
+    def filter_initial_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
         """Filter the initial positions of a particle set."""
         # Unrestricted spawn
         return particles
 
     @staticmethod
-    def filter_final_positions(particles: Sequence[Particle]) -> Sequence[Particle]:
+    def filter_final_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
         """Filter the final positions of a particle set."""
         # Assign final positions at time PLD
         for particle in particles:
