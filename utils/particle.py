@@ -9,9 +9,9 @@ from numpy.typing import ArrayLike
 from scipy.interpolate import griddata
 
 sys.path.insert(1, str(Path.cwd() / 'utils'))
-from constants import PLD, LEFT_BOUND, RIGHT_BOUND, TOP_BOUND, BOTTOM_BOUND
-from geneticlineage import GeneticLineage
-from zone import Zone
+from constants import PLD, LEFT_BOUND, RIGHT_BOUND, TOP_BOUND, BOTTOM_BOUND  # noqa: E402
+from geneticlineage import GeneticLineage  # noqa: E402
+from zone import Zone  # noqa: E402
 
 
 class Particle:
