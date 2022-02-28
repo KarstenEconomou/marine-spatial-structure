@@ -20,6 +20,8 @@ from module import Module  # noqa: E402
 from particle import Particle  # noqa: E402
 from zone import Zone  # noqa: E402
 
+PROJECTION = ccrs.PlateCarree()
+
 OBJ_ZORDER = 0
 
 HEX_FACE_ALPHA = 1
@@ -40,16 +42,16 @@ def create_figure() -> plt.Figure:
 
 def create_axis(fig: plt.Figure, title: Optional[str] = None, ticks: bool = True) -> plt.Axes:
     """Create axis containing a land mask over the domain of interest."""
-    ax = fig.add_subplot(projection=ccrs.PlateCarree(), title=title)
+    ax = fig.add_subplot(projection=PROJECTION, title=title)
     pad = 0.25
     ax.set_extent([LEFT_BOUND - pad, RIGHT_BOUND + pad, BOTTOM_BOUND - pad, TOP_BOUND + pad])
 
     if ticks:
-        ax.set_xticks([-75, -70, -65, -60, -55, -50], crs=ccrs.PlateCarree())
+        ax.set_xticks([-75, -70, -65, -60, -55, -50], crs=PROJECTION)
         ax.xaxis.set_major_formatter(LONGITUDE_FORMATTER)
         ax.xaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
 
-        ax.set_yticks([35, 40, 45, 50], crs=ccrs.PlateCarree())
+        ax.set_yticks([35, 40, 45, 50], crs=PROJECTION)
         ax.yaxis.set_major_formatter(LATITUDE_FORMATTER)
         ax.yaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
 
@@ -146,19 +148,19 @@ def plot_modules(
         add_boundaries(ax, zones)
 
     if colorbar:
-        module_colors = [module.color for module in modules if not module.is_null()]
-        number_of_colored_modules = len(module_colors)
+        number_of_modules = len(modules)
+        module_colors = [module.color for module in modules]
 
-        ticks = np.arange(1, (number_of_colored_modules + 2))
+        ticks = np.arange(1, (number_of_modules + 2))
         tick_locs = (np.arange(len(ticks)) + 0.5) * len(ticks) / len(ticks)
 
         cmap = mpl.colors.ListedColormap(module_colors)
-        norm = mpl.colors.BoundaryNorm(ticks, number_of_colored_modules + 1)
+        norm = mpl.colors.BoundaryNorm(ticks, number_of_modules + 1)
         sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
         cb = plt.colorbar(sm, ax=ax, pad=0.02, fraction=0.046)
 
         cb.set_ticks(tick_locs[1::2])
-        cb.set_ticklabels(ticks[0:number_of_colored_modules:2].astype(int))
+        cb.set_ticklabels(ticks[0:number_of_modules:2].astype(int))
         cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
         
         cb.set_label(colorbar_label, size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
@@ -185,19 +187,15 @@ def plot_quality(
     color = mpl.cm.get_cmap(cmap)
 
     for module in modules:
-        if module.is_null():
-            # Module is the null module
-            face_color = module.color
-        else:
-            # Module should be colored according to the desire parameter
-            if parameter == 'coherence':
-                parameter_value = module.coherence
-            elif parameter == 'fortress':
-                parameter_value = module.fortress
-            elif parameter == 'mixing':
-                parameter_value = module.mixing
+        # Module should be colored according to the desire parameter
+        if parameter == 'coherence':
+            parameter_value = module.coherence
+        elif parameter == 'fortress':
+            parameter_value = module.fortress
+        elif parameter == 'mixing':
+            parameter_value = module.mixing
 
-            face_color = color(norm(parameter_value))
+        face_color = color(norm(parameter_value))
 
         for hexagon in module.hexbins:
             ax.add_patch(mpl.patches.Polygon(
