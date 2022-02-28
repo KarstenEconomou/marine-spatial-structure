@@ -99,17 +99,6 @@ class Module:
 
             self.mixing = -entropy / (len(module_hexbins) * log10(len(module_hexbins)))
 
-    def is_null(self) -> bool:
-        """Returns whether a module is the null module."""
-        return self.index == 0
-
-    @classmethod
-    def make_null_module(cls) -> 'Module':
-        """Make a null module."""
-        null_module = cls(0)
-        null_module.color = '#c7c7c7'
-        return null_module
-
     @staticmethod
     def read_clu(
         file: Union[str, Path],
@@ -127,50 +116,3 @@ class Module:
             display(clu)
 
         return list(module_map.values()), hexbins
-
-    @staticmethod
-    def remove_noise(
-        modules: List['Module'],
-        null_module: 'Module',
-        hexbin_dict: Dict[str, 'Hexbin'],
-        colors: List[str],
-    ) -> List['Module']:
-        """Cycles through modules to set colors, grey bad hexbins, and re-index."""
-
-        def grey_hexbin(hexagon: 'Hexbin') -> None:
-            """Removes a hexbin from a module and sets its module to the null module."""
-            hexagon.module = null_module  # Set module to null module
-            null_module.hexbins.append(hexagon)  # Add to null module hexbins
-
-        null_module.hexbins = []
-        new_modules = [null_module]
-        module_index = 1
-        for module in modules:
-            for hexbin in module.hexbins:
-                adjacent_bins = hexbin.get_adjacent_bins(module.hexbins, hexbin_dict=hexbin_dict)
-                number_of_adjacent_bins = len(adjacent_bins)
-                if number_of_adjacent_bins == 0:
-                    # Isolated hexbin
-                    grey_hexbin(hexbin)
-                elif number_of_adjacent_bins == 1:
-                    other_bin = adjacent_bins[0]
-                    if len(other_bin.get_adjacent_bins(module.hexbins, hexbin_dict=hexbin_dict)) == 1:
-                        # Isolated two hexbins
-                        grey_hexbin(hexbin)
-                        grey_hexbin(other_bin)
-            
-            # Grey all hexbins if module is small
-            if module.is_small():
-                for hexbin in module.hexbins:
-                    grey_hexbin(hexbin)
-
-            # Color and re-index module if it still contains any hexbins
-            module.associate_hexbins(hexbin_dict.values())
-            if len(module.hexbins) != 0:
-                module.index = module_index
-                module.color = colors[module_index - 1]
-                new_modules.append(module)
-
-                module_index += 1
-        
-        return new_modules

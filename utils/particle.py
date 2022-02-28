@@ -23,9 +23,9 @@ class Particle:
         self.lats: Sequence[float] = lats
         self.mlds: Sequence[float] = mlds
 
-        self.genetic_lineage: Union[None, Zone] = None
-        self.settlement_time: int = PLD
-        self.settlement_position: Tuple[float, float] = self.get_position(self.settlement_time)
+        self.genetic_lineage: Optional[Zone] = None
+        self.settlement_time: Optional[int] = None
+        self.settlement_position: Optional[Tuple[float, float]] = None
 
     def assign_genetic_lineage(self, zones: Dict[Zone, GeneticLineage], allow_undefined=True) -> None:
         """Assigns the particle to be of a genetic lineage based on its starting position."""

@@ -72,7 +72,37 @@ class Unrestricted(ParticleType):
     def filter_final_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
         """Assign particle set final positions at PLD."""
         for particle in particles:
-            particle.final_position = particle.get_position(PLD)
+            particle.settlement_position = particle.get_position(PLD)
+            particle.settlement_time = PLD
+
+        return particles
+
+
+class UnrestrictedCP(ParticleType):
+    """Class of particles that are free to start and end their trajectories anywhere."""
+    name: str = 'unrestricted_cp'
+
+    @staticmethod
+    def get_simulation(season: Season):
+        """Get the simulation file."""
+        return Dataset(Path.cwd() / 'data' / 'simulations' / f'{season.name}.nc')
+
+    @staticmethod
+    def plot(particles: Sequence['Particle'], time: int, zones: Dict[Zone, GeneticLineage] = None, path: Optional[Union[str, Path]] = None) -> None:
+        """Plot particles."""
+        plot_particles(particles, time, path=path)
+
+    @staticmethod
+    def filter_initial_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
+        """No initial filter required."""
+        return particles
+
+    @staticmethod
+    def filter_final_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
+        """Assign particle set final positions at start of CP."""
+        for particle in particles:
+            particle.settlement_position = particle.get_position(PLD - CP)
+            particle.settlement_time = PLD - CP
 
         return particles
 
@@ -93,14 +123,14 @@ class Fixed(ParticleType):
     @staticmethod
     def filter_initial_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
         """No initial filter required."""
-        # Unrestricted spawn
         return particles
 
     @staticmethod
     def filter_final_positions(particles: Sequence[Particle], zones: Dict[Zone, GeneticLineage] = None) -> Sequence[Particle]:
         """Assign particle set final positions at PLD."""
         for particle in particles:
-            particle.final_position = particle.get_position(PLD)
+            particle.settlement_position = particle.get_position(PLD)
+            particle.settlement_time = PLD
 
         return particles
 
