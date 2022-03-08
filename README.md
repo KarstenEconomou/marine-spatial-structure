@@ -44,9 +44,7 @@ Used data, temporary files, and most output is not included in this repository. 
 ### Pre-simulation
 
 1. Create initial particle locations of a uniform density: `initial_positions.ipynb`
-2. Convert polygons defining genetic regions expressed in `.shp` (and related files) format to `.txt` files of latitudes
-   and longitudes: `make_polygon.m`
-3. Write a grid over the domain depicting the suitability of habitat of each cell for each genetic lineage from a `.tif` probability-based species distribution model: `sdm_grid.ipynb`
+2. Write a grid over the domain depicting the suitability of habitat of each cell for each genetic lineage from a `.tif` probability-based species distribution model: `sdm_grid.ipynb`
 
 ### Post-simulation
 
