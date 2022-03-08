@@ -47,7 +47,7 @@ class GeneticLineage:
     @staticmethod
     def make_polygon(file: Path) -> Polygon:
         """Create a polygon from a file containing coordinates."""
-        coordinates = np.loadtxt(str(file))
+        coordinates = np.loadtxt(str(file), delimiter=',')
         return Polygon([point for point in coordinates])
 
     @staticmethod

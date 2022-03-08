@@ -338,7 +338,7 @@ def plot_subpopulations(
     if colors is None:
         colors = ['red', 'green', 'blue']
 
-    add_boundaries(ax, zones)
+    # add_boundaries(ax, zones)
 
     for color, zone in zip(colors, zones.keys()):
         if time == -1:
