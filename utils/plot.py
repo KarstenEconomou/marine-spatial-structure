@@ -1,6 +1,7 @@
 """Plot particles and hexagons within the domain of interest."""
 import sys
 from pathlib import Path
+from turtle import position
 from typing import Union, Dict, Optional, Sequence, Tuple
 
 import cartopy.crs as ccrs
@@ -10,6 +11,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from numpy.typing import ArrayLike
 
 sys.path.insert(1, str(Path.cwd() / 'utils'))
@@ -40,7 +42,13 @@ def create_figure() -> plt.Figure:
     return plt.figure(dpi=900, facecolor='white')
 
 
-def create_axis(fig: plt.Figure, title: Optional[str] = None, ticks: bool = True) -> plt.Axes:
+def create_axis(
+    fig: plt.Figure,
+    title: Optional[str] = None, 
+    ticks: bool = True,
+    label_x_tick: bool = True,
+    label_y_tick: bool = True,
+) -> plt.Axes:
     """Create axis containing a land mask over the domain of interest."""
     ax = fig.add_subplot(projection=PROJECTION, title=title)
     pad = 0.25
@@ -49,11 +57,11 @@ def create_axis(fig: plt.Figure, title: Optional[str] = None, ticks: bool = True
     if ticks:
         ax.set_xticks([-75, -70, -65, -60, -55, -50], crs=PROJECTION)
         ax.xaxis.set_major_formatter(LONGITUDE_FORMATTER)
-        ax.xaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
+        ax.xaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD, labelbottom=label_x_tick)
 
         ax.set_yticks([35, 40, 45, 50], crs=PROJECTION)
         ax.yaxis.set_major_formatter(LATITUDE_FORMATTER)
-        ax.yaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
+        ax.yaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD, labelleft=label_y_tick)
 
     land = cfeature.NaturalEarthFeature(
         'physical',
@@ -123,11 +131,13 @@ def plot_modules(
     colorbar_label: Optional[str] = None,
     title: Optional[str] = None,
     ticks: bool = True,
+    label_x_tick: bool = True,
+    label_y_tick: bool = True,
     path: Optional[Union[str, Path]] = None,
  ) -> None:
     """Plot hexagons coloured by the module they belong to."""
     fig = create_figure()
-    ax = create_axis(fig, title, ticks)
+    ax = create_axis(fig, title, ticks, label_x_tick, label_y_tick)
 
     for module in modules:
         for hexagon in module.hexbins:
@@ -148,22 +158,32 @@ def plot_modules(
         add_boundaries(ax, zones)
 
     if colorbar:
+        # Create tick locs
         number_of_modules = len(modules)
         module_colors = [module.color for module in modules]
-
         ticks = np.arange(1, (number_of_modules + 2))
         tick_locs = (np.arange(len(ticks)) + 0.5) * len(ticks) / len(ticks)
 
+        # Define coloring system
         cmap = mpl.colors.ListedColormap(module_colors)
         norm = mpl.colors.BoundaryNorm(ticks, number_of_modules + 1)
         sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-        cb = plt.colorbar(sm, ax=ax, pad=0.02, fraction=0.046)
+
+        # Set colorbar
+        cax = inset_axes(
+            ax,
+            width='75%',
+            height='5%',
+            loc='lower right',
+            borderpad=0.7,
+        )
+        cb = fig.colorbar(sm, ax=ax, cax=cax, orientation='horizontal')
 
         cb.set_ticks(tick_locs[1::2])
         cb.set_ticklabels(ticks[0:number_of_modules:2].astype(int))
-        cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
-        
-        cb.set_label(colorbar_label, size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
+        cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD/2)
+        cax.xaxis.set_ticks_position('top')
+        cb.ax.set_title(colorbar_label, size=LABEL_FONT_SIZE)
 
     if path is not None:
         save_plot(path)
@@ -176,12 +196,15 @@ def plot_quality(
     cmap: str = 'cet_rainbow',
     colorbar: bool = True,
     colorbar_label: Optional[str] = None,
+    ticks: bool = True,
+    label_x_tick: bool = True,
+    label_y_tick: bool = True,
     title: Optional[str] = None,
     path: Optional[Union[str, Path]] = None
 ) -> None:
     """Plot hexagons coloured by the quality of their module."""
     fig = create_figure()
-    ax = create_axis(fig, title)
+    ax = create_axis(fig, title, ticks, label_x_tick, label_y_tick)
 
     norm = mpl.colors.Normalize(vmin=0, vmax=1)
     color = mpl.cm.get_cmap(cmap)
@@ -209,11 +232,22 @@ def plot_quality(
             )
 
     if colorbar:
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        # Define coloring system
+        sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
         sm.set_array([])
-        cb = plt.colorbar(sm, ax=ax, pad=0.02, fraction=0.046)
-        cb.set_label(colorbar_label, size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
-        cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
+
+        # Set colorbar
+        cax = inset_axes(
+            ax,
+            width='75%',
+            height='5%',
+            loc='lower right',
+            borderpad=0.7,
+        )
+        cb = fig.colorbar(sm, ax=ax, cax=cax, orientation='horizontal')
+        cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD/2)
+        cax.xaxis.set_ticks_position('top')
+        cb.ax.set_title(colorbar_label, size=LABEL_FONT_SIZE)
 
     if other_hexagons is not None:
         add_other_hexagons(ax, other_hexagons)
