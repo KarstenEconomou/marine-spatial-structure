@@ -53,6 +53,7 @@ class Unrestricted(ParticleType):
     """Class of particles that are free to start and end (at PLD) their trajectories anywhere."""
     name: str = 'unrestricted'
     genetics: bool = False
+    seed: int = 1
 
     @staticmethod
     def get_simulation(season: Season):
@@ -83,6 +84,7 @@ class UnrestrictedCP(ParticleType):
     """Class of particles that are free to start and end (at start of CP) their trajectories anywhere."""
     name: str = 'unrestricted_cp'
     genetics: bool = False
+    seed: int = 0
 
     @staticmethod
     def get_simulation(season: Season):
@@ -112,6 +114,7 @@ class Fixed(ParticleType):
     """Class of particles that are free to start and end (at PLD) their trajectories anywhere."""
     name: str = 'fixed'
     genetics: bool = False
+    seed: int = 2
 
     @staticmethod
     def get_simulation(season: Season):
@@ -142,6 +145,7 @@ class Restricted(ParticleType):
     """Class of particles that are restricted to suitable habitat spawn and settlement."""
     name: str = 'restricted'
     genetics: bool = True
+    seed: int = 0
 
     @staticmethod
     def get_simulation(season: Season):
