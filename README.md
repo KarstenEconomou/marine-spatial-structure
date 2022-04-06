@@ -1,17 +1,17 @@
 
-# Assessing spatial structure in marine systems
+# Assessing spatial structure in marine populations
 
 ![Spatial structure](https://karsteneconomou.com/projects/marine-spatial-structure/clusters.png)
 
-This repository contains code used for assessing spatial structure in marine systems modelled using particle tracking. This research was conducted with [Dalhousie University](https://www.dal.ca)'s Department of Engineering Mathematics & Internetworking in collaboration with [Fisheries and Oceans Canada](https://www.dfo-mpo.gc.ca). Author is Karsten Economou.
+This repository contains code used for assessing spatial structure in marine populations. This research was conducted with [Dalhousie University](https://www.dal.ca)'s Department of Engineering Mathematics & Internetworking in collaboration with [Fisheries and Oceans Canada](https://www.dfo-mpo.gc.ca). Author is Karsten Economou.
 
 ## About the research
 
-Paper in progress.
+Manuscript in progress.
 
 ## Data used
 
-The particle-track simulation, contributed to by Dr. Kira Krumhansl, Dr. Wendy Gentleman, and Karsten Economou (not included in this repository), uses the Bedford Institute of Oceanography North Atlantic Ocean model (BNAM) for field data. The species distribution model used for *P. mag* was provided by Drs. Ben Lowen and Claudio DiBacco.
+The particle-track simulation, contributed to by Dr. Kira Krumhansl, Dr. Wendy Gentleman, and Karsten Economou (not included in this repository), uses the Bedford Institute of Oceanography North Atlantic Ocean model (BNAM) for field data. The species distribution model used for *Placopecten magellanicus* was provided by Drs. Ben Lowen and Claudio DiBacco.
 
 ## Usage
 
