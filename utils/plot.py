@@ -13,6 +13,7 @@ import numpy as np
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from numpy.typing import ArrayLike
+from sklearn.exceptions import DataDimensionalityWarning
 
 sys.path.insert(1, str(Path.cwd() / 'utils'))
 from constants import LEFT_BOUND, RIGHT_BOUND, TOP_BOUND, BOTTOM_BOUND
@@ -256,48 +257,6 @@ def plot_quality(
         save_plot(path)
 
 
-def plot_flow(
-    hexbins: Sequence[Hexbin],
-    other_hexagons: Optional[Sequence[Hexbin]] = None,
-    cmap: str = 'cet_rainbow',
-    colorbar: bool = True,
-    title: Optional[str] = None,
-    path: Optional[Union[str, Path]] = None
-) -> None:
-    """Plot hexagons coloured by their flow."""
-    fig = create_figure()
-    ax = create_axis(fig, title)
-
-    flows = tuple(hexbin.flow for hexbin in hexbins)
-
-    norm = mpl.colors.Normalize(vmin=min(flows), vmax=max(flows))
-    color = mpl.cm.get_cmap(cmap)
-
-    for hexagon in hexbins:
-        ax.add_patch(mpl.patches.Polygon(
-            hexagon.hex,
-            fc=mpl.colors.to_rgba(color(norm(hexagon.flow)), HEX_FACE_ALPHA),
-            ec=(0, 0, 0, HEX_EDGE_ALPHA),
-            lw=HEX_LINE_WIDTH,
-            zorder=OBJ_ZORDER,
-            transform=ccrs.PlateCarree(),
-            )
-        )
-
-    if colorbar:
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm.set_array([])
-        cb = plt.colorbar(sm, ax=ax, pad=0.02, fraction=0.046)
-        cb.set_label('Flow', size=LABEL_FONT_SIZE, labelpad=LABEL_PAD)
-        cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
-
-    if other_hexagons is not None:
-        add_other_hexagons(ax, other_hexagons)
-
-    if path is not None:
-        save_plot(path)
-
-
 def plot_positions(
     lon: Sequence[float],
     lat: Sequence[float],
@@ -405,6 +364,7 @@ def plot_contourf(
     colorbar_label: Optional[str] = None,
     path: Optional[Union[str, Path]] = None,
 ) -> None:
+    """Plot filled contour."""
     fig = create_figure()
     ax = create_axis(fig, title)
 
@@ -434,3 +394,50 @@ def plot_contourf(
 
     if path is not None:
         save_plot(path)
+
+def plot_heatmap(
+    data: ArrayLike,
+    text: bool = True,
+    cmap: str = 'cet_CET_D10'
+) -> None:
+    """Plot connectivity heatmap."""
+    fig = create_figure()
+    ax = fig.add_subplot()
+    im = ax.imshow(data, cmap=cmap)
+
+    # Configure colorbar
+    norm = mpl.colors.Normalize(vmin=data.min(), vmax=data.max())
+    sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+    cb = fig.colorbar(sm, ax=ax, pad=0.01)
+    cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD/2)
+    cb.set_label('Fraction particle transfer', fontsize=TICK_FONT_SIZE)
+
+    # Configure ticks
+    number_of_modules = len(data)
+    ticks = np.arange(1, (number_of_modules + 2))
+    tick_locs = np.arange(len(ticks))
+
+    ax.set_xticks(tick_locs[0:number_of_modules])
+    ax.set_xticklabels(ticks[0:number_of_modules].astype(int))
+    ax.xaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
+    ax.xaxis.tick_top()
+    ax.set_xlabel('Settlement community', fontsize=TICK_FONT_SIZE)
+    ax.xaxis.set_label_position('top') 
+
+    ax.set_yticks(tick_locs[0:number_of_modules])
+    ax.set_yticklabels(ticks[0:number_of_modules].astype(int))
+    ax.yaxis.set_tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD)
+    ax.set_ylabel('Spawn community', fontsize=TICK_FONT_SIZE)
+
+    # Draw grid
+    for pos in (tick_locs[0:number_of_modules] + 0.5):
+        ax.axhline(pos, color='k', linestyle='-', linewidth=0.2)
+        ax.axvline(pos, color='k', linestyle='-', linewidth=0.2)
+
+    # Add text
+    if text:
+        for i in range(number_of_modules):
+            for j in range(number_of_modules):
+                data_cell = round(data[i, j], 2)
+                if data_cell != 0:
+                    ax.text(j, i, data_cell, ha='center', va='center', color='k', fontsize=5)
