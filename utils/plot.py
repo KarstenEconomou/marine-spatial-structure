@@ -40,6 +40,8 @@ LABEL_FONT_SIZE = TICK_FONT_SIZE
 
 def create_figure() -> plt.Figure:
     """Create figure."""
+    mpl.rcParams['font.sans-serif'] = 'Arial'
+    mpl.rcParams['font.family'] = 'sans-serif'
     return plt.figure(dpi=900, facecolor='white')
 
 
@@ -398,7 +400,8 @@ def plot_contourf(
 def plot_heatmap(
     data: ArrayLike,
     text: bool = True,
-    cmap: str = 'cet_CET_D10'
+    cmap: str = 'cet_CET_D10',
+    path: Optional[Union[str, Path]] = None,
 ) -> None:
     """Plot connectivity heatmap."""
     fig = create_figure()
@@ -441,3 +444,6 @@ def plot_heatmap(
                 data_cell = round(data[i, j], 2)
                 if data_cell != 0:
                     ax.text(j, i, data_cell, ha='center', va='center', color='k', fontsize=5)
+
+    if path is not None:
+        save_plot(path)

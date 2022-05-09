@@ -4,12 +4,14 @@ from abc import ABC, abstractmethod
 from typing import Dict, Sequence, Optional, Union
 from pathlib import Path
 
+import h3
 import numpy as np
 from netCDF4 import Dataset
 
 sys.path.insert(1, str(Path.cwd() / 'utils'))
 from constants import PLD, CP  # noqa: E402
 from geneticlineage import GeneticLineage  # noqa: E402
+from module import Module  # noqa: E402
 from particle import Particle  # noqa: E402
 from plot import plot_particles, plot_subpopulations  # noqa: E402
 from season import Season  # noqa: E402
@@ -48,6 +50,12 @@ class ParticleType(ABC):
         """Plot the particle set."""
         pass
 
+    @staticmethod
+    @abstractmethod
+    def sort_modules(modules: Sequence[Module], zones: Optional[Dict[Zone, GeneticLineage]] = None) -> Sequence[Module]:
+        """Sort module indexing."""
+        pass
+
 
 class Unrestricted(ParticleType):
     """Class of particles that are free to start and end (at PLD) their trajectories anywhere."""
@@ -78,6 +86,29 @@ class Unrestricted(ParticleType):
             particle.settlement_time = PLD
 
         return particles
+
+    @staticmethod
+    def sort_modules(modules: Sequence[Module], zones: Optional[Dict[Zone, GeneticLineage]] = None) -> Sequence[Module]:
+        """Sort module indexing from south to north."""
+        # Get southern points
+        south_points = []
+        for module in modules:
+            south_point = min(h3.h3_to_geo(hexbin.h3)[0] for hexbin in module.hexbins)
+            south_points.append((south_point, module.index))
+
+        # Sort in ascending order
+        south_points.sort(key=lambda x: x[0])
+
+        # Re-index
+        new_modules = []
+        for new_index, (_, index) in enumerate(south_points, 1):
+            for module in modules:
+                if module.index == index:  # Module to be re-indexed found
+                    modules.remove(module)  # Remove module from search
+                    module.index = new_index  # Re-index module
+                    new_modules.append(module)  # Mark module as re-indexed
+
+        return new_modules
 
 
 class UnrestrictedCP(ParticleType):
@@ -110,6 +141,30 @@ class UnrestrictedCP(ParticleType):
 
         return particles
 
+    @staticmethod
+    def sort_modules(modules: Sequence[Module], zones: Optional[Dict[Zone, GeneticLineage]] = None) -> Sequence[Module]:
+        """Sort module indexing from south to north."""
+        # Get southern points
+        south_points = []
+        for module in modules:
+            south_point = min(h3.h3_to_geo(hexbin.h3)[0] for hexbin in module.hexbins)
+            south_points.append((south_point, module.index))
+
+        # Sort in ascending order
+        south_points.sort(key=lambda x: x[0])
+
+        # Re-index
+        new_modules = []
+        for new_index, (_, index) in enumerate(south_points, 1):
+            for module in modules:
+                if module.index == index:  # Module to be re-indexed found
+                    modules.remove(module)  # Remove module from search
+                    module.index = new_index  # Re-index module
+                    new_modules.append(module)  # Mark module as re-indexed
+
+        return new_modules
+
+
 class Fixed(ParticleType):
     """Class of particles that are free to start and end (at PLD) their trajectories anywhere."""
     name: str = 'fixed'
@@ -139,6 +194,29 @@ class Fixed(ParticleType):
             particle.settlement_time = PLD
 
         return particles
+
+    @staticmethod
+    def sort_modules(modules: Sequence[Module], zones: Optional[Dict[Zone, GeneticLineage]] = None) -> Sequence[Module]:
+        """Sort module indexing from south to north."""
+        # Get southern points
+        south_points = []
+        for module in modules:
+            south_point = min(h3.h3_to_geo(hexbin.h3)[0] for hexbin in module.hexbins)
+            south_points.append((south_point, module.index))
+
+        # Sort in ascending order
+        south_points.sort(key=lambda x: x[0])
+
+        # Re-index
+        new_modules = []
+        for new_index, (_, index) in enumerate(south_points, 1):
+            for module in modules:
+                if module.index == index:  # Module to be re-indexed found
+                    modules.remove(module)  # Remove module from search
+                    module.index = new_index  # Re-index module
+                    new_modules.append(module)  # Mark module as re-indexed
+
+        return new_modules
 
 
 class Restricted(ParticleType):
@@ -178,3 +256,31 @@ class Restricted(ParticleType):
         particles = Particle.filter_unsuitable_particles(particles, lons, lats, zones, competency_period=True)
         return particles
 
+    @staticmethod
+    def sort_modules(modules: Sequence[Module], zones: Optional[Dict[Zone, GeneticLineage]] = None) -> Sequence[Module]:
+        """Sort module indexing from south to north."""
+        # Get southern points
+        south_points = []
+        for module in modules:
+            points = [h3.h3_to_geo(hexbin.h3) for hexbin in module.hexbins]
+
+            # Get genetic lineage of module
+            g_zones = [GeneticLineage.get_region(zones, *point[::-1]) for point in points]
+            zone = max(set(g_zones), key=g_zones.count)
+
+            south_point = min(points, key=lambda x: x[0])
+            south_points.append((zone, south_point[0], module.index))
+
+        # Sort in ascending order
+        south_points.sort(key=lambda x: (x[0].value, x[1]))
+
+        # Re-index
+        new_modules = []
+        for new_index, (_, _, index) in enumerate(south_points, 1):
+            for module in modules:
+                if module.index == index:  # Module to be re-indexed found
+                    modules.remove(module)  # Remove module from search
+                    module.index = new_index  # Re-index module
+                    new_modules.append(module)  # Mark module as re-indexed
+
+        return new_modules
