@@ -1,7 +1,7 @@
 
 # Assessing spatial structure in marine populations
 
-![Spatial structure](https://karsteneconomou.com/projects/marine-spatial-structure/clusters.png)
+![Spatial structure](clusters.png)
 
 This repository contains code used for assessing spatial structure in marine populations. This research was conducted with [Dalhousie University](https://www.dal.ca)'s Department of Engineering Mathematics & Internetworking in collaboration with [Fisheries and Oceans Canada](https://www.dfo-mpo.gc.ca). Author is Karsten Economou.
 
