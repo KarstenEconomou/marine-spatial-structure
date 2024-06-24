@@ -11,9 +11,4 @@ venv.bak/
 .idea/
 .vscode/
 
-# Data directories
 network/
-data/
-
-# Particle tracking
-simulation/

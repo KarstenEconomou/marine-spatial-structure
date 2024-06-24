@@ -1,7 +1,6 @@
 """Plot particles and hexagons within the domain of interest."""
 import sys
 from pathlib import Path
-from turtle import position
 from typing import Union, Dict, Optional, Sequence, Tuple
 
 import cartopy.crs as ccrs
@@ -13,9 +12,8 @@ import numpy as np
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from numpy.typing import ArrayLike
-from sklearn.exceptions import DataDimensionalityWarning
 
-sys.path.insert(1, str(Path.cwd() / 'utils'))
+sys.path.insert(1, str(Path.cwd().parent / 'utils'))
 from constants import LEFT_BOUND, RIGHT_BOUND, TOP_BOUND, BOTTOM_BOUND
 from geneticlineage import GeneticLineage  # noqa: E402
 from hexbin import Hexbin  # noqa: E402
@@ -400,7 +398,7 @@ def plot_contourf(
 def plot_heatmap(
     data: ArrayLike,
     text: bool = True,
-    cmap: str = 'cet_CET_D10',
+    cmap: str = 'viridis',
     path: Optional[Union[str, Path]] = None,
 ) -> None:
     """Plot connectivity heatmap."""
@@ -443,7 +441,69 @@ def plot_heatmap(
             for j in range(number_of_modules):
                 data_cell = round(data[i, j], 2)
                 if data_cell != 0:
-                    ax.text(j, i, data_cell, ha='center', va='center', color='k', fontsize=5)
+                    if data_cell > 0.5:
+                        color = 'k'
+                    else:
+                        color = 'w'
+                    ax.text(j, i, data_cell, ha='center', va='center', color=color, fontsize=5)
+
+    if path is not None:
+        save_plot(path)
+
+
+def plot_boundary_persistence(
+    hexbins: Sequence[Hexbin],
+    other_hexagons: Optional[Sequence[Hexbin]] = None,
+    cmap: str = 'viridis',
+    colorbar: bool = True,
+    colorbar_label: Optional[str] = None,
+    ticks: bool = True,
+    label_x_tick: bool = True,
+    label_y_tick: bool = True,
+    title: Optional[str] = None,
+    path: Optional[Union[str, Path]] = None
+) -> None:
+    """Plot hexagons coloured by the quality of their module."""
+    fig = create_figure()
+    ax = create_axis(fig, title, ticks, label_x_tick, label_y_tick)
+
+    norm = mpl.colors.Normalize(vmin=0, vmax=1)
+    color = mpl.cm.get_cmap(cmap)
+
+    for hexbin in hexbins:
+        # Hexbin should be colored according to the boundary persistence
+        face_color = color(norm(hexbin.boundary_persistence))
+
+        ax.add_patch(mpl.patches.Polygon(
+            hexbin.hex,
+            fc=mpl.colors.to_rgba(face_color, HEX_FACE_ALPHA),
+            ec=(0, 0, 0, HEX_EDGE_ALPHA),
+            lw=HEX_LINE_WIDTH,
+            zorder=OBJ_ZORDER,
+            transform=ccrs.PlateCarree(),
+            )
+        )
+
+    if colorbar:
+        # Define coloring system
+        sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+        sm.set_array([])
+
+        # Set colorbar
+        cax = inset_axes(
+            ax,
+            width='75%',
+            height='5%',
+            loc='lower right',
+            borderpad=0.7,
+        )
+        cb = fig.colorbar(sm, ax=ax, cax=cax, orientation='horizontal')
+        cb.ax.tick_params(labelsize=TICK_FONT_SIZE, pad=TICK_PAD/2)
+        cax.xaxis.set_ticks_position('top')
+        cb.ax.set_title(colorbar_label, size=LABEL_FONT_SIZE)
+
+    if other_hexagons is not None:
+        add_other_hexagons(ax, other_hexagons)
 
     if path is not None:
         save_plot(path)

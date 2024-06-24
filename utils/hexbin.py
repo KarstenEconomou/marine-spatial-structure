@@ -79,16 +79,16 @@ class Hexbin:
 
     def is_boundary(self, domain: Sequence['Hexbin'], hexbin_dict: Dict[str, 'Hexbin']) -> bool:
         """Check if hexbin is acting as a boundary."""
-        adjacent_bins = self.get_adjacent_bins(domain)
-        for h3_index in adjacent_bins:
-            hexbin = hexbin_dict[h3_index]
+        adjacent_bins = self.get_adjacent_bins(domain, hexbin_dict=hexbin_dict)
+
+        for hexbin in adjacent_bins:
             if self.module.index != hexbin.module.index:
                 return True
         return False
 
     def set_boundary_persistence(self, boundaries: Sequence['Hexbin']) -> None:
         """Calculate fraction of times acting as a boundary."""
-        self.boundary_persistence = boundaries.count(self)/NUMBER_OF_SEEDS
+        self.boundary_persistence = boundaries.count(self) / NUMBER_OF_SEEDS
 
     def __make_hexagon(self) -> Tuple[Tuple[float, float], ...]:
         """Define polygon representation by six vertices."""
